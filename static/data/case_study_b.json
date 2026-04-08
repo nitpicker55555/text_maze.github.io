@@ -1,0 +1,112 @@
+{
+  "title": "Case Study B: Long-Range Conflict with EIS + VC Synergy",
+  "description": "A 9-node environment explored via two divergent paths from Entrance Hall. A directional error at step 5 silently propagates 15 steps before a structural conflict is detected.",
+  "nodes": [
+    { "id": "Entrance Hall",  "x": 0, "y": 0 },
+    { "id": "Corridor",       "x": 0, "y": 1 },
+    { "id": "Lab",            "x": 1, "y": 1 },
+    { "id": "Office",         "x": 1, "y": 0 },
+    { "id": "Meeting Room",   "x": 2, "y": 0, "errorX": 1, "errorY": 1 },
+    { "id": "Break Room",     "x": 2, "y": 1, "errorX": 1, "errorY": 2 },
+    { "id": "Storage",        "x": 2, "y": 2, "errorX": 1, "errorY": 3 },
+    { "id": "Archive",        "x": 3, "y": 2, "errorX": 2, "errorY": 3 },
+    { "id": "Vault",          "x": 3, "y": 3, "errorX": 2, "errorY": 4 }
+  ],
+  "steps": [
+    {
+      "step": 1,
+      "action": "go south",
+      "observation": "You walk south from the entrance hall into a long corridor with stone walls.",
+      "edge": { "src": "Entrance Hall", "dst": "Corridor", "dir": "south" },
+      "type": "add",
+      "note": "First step: entrance hall → corridor."
+    },
+    {
+      "step": 3,
+      "action": "go east",
+      "observation": "You walk east from the entrance hall into a spacious office with large windows.",
+      "edge": { "src": "Entrance Hall", "dst": "Office", "dir": "east" },
+      "type": "add",
+      "note": "Branching to the office path."
+    },
+    {
+      "step": 5,
+      "action": "go to meeting room",
+      "observation": "Leaving the office, you head down the hallway to the meeting room.",
+      "edge": { "src": "Office", "dst": "Meeting Room", "dir": "south" },
+      "type": "error",
+      "note": "ERROR: LLM maps \"down the hallway\" to south. Ground truth is east. No conflict yet — silent error."
+    },
+    {
+      "step": 7,
+      "action": "go south",
+      "observation": "From the meeting room, you go south into a break room with a coffee machine.",
+      "edge": { "src": "Meeting Room", "dst": "Break Room", "dir": "south" },
+      "type": "add",
+      "note": "Correct edge but inherits the positional shift."
+    },
+    {
+      "step": 9,
+      "action": "go south",
+      "observation": "Going further south, you reach a storage area stacked with boxes.",
+      "edge": { "src": "Break Room", "dst": "Storage", "dir": "south" },
+      "type": "add",
+      "note": "Positional shift continues downstream."
+    },
+    {
+      "step": 11,
+      "action": "go east",
+      "observation": "Heading east from storage, you enter a dusty archive filled with old records.",
+      "edge": { "src": "Storage", "dst": "Archive", "dir": "east" },
+      "type": "add",
+      "note": "Archive also misplaced."
+    },
+    {
+      "step": 13,
+      "action": "go south",
+      "observation": "Going south from the archive, you descend into a secure vault.",
+      "edge": { "src": "Archive", "dst": "Vault", "dir": "south" },
+      "type": "add",
+      "note": "Five downstream nodes have now inherited the shift."
+    },
+    {
+      "step": 20,
+      "action": "go east",
+      "observation": "From the corridor, you walk east into a well-equipped laboratory with beakers and microscopes.",
+      "edge": { "src": "Corridor", "dst": "Lab", "dir": "east" },
+      "type": "conflict",
+      "note": "CONFLICT DETECTED at step 20. Lab would be at (1,1), but Meeting Room is already there. 15-step temporal gap!"
+    }
+  ],
+  "lca": {
+    "root": "Entrance Hall",
+    "path_to_lab": ["Entrance Hall", "Corridor", "Lab"],
+    "path_to_meeting_room": ["Entrance Hall", "Office", "Meeting Room"],
+    "candidates": [
+      { "edge": "Entrance Hall → Office",       "reach": 6, "r_hat": 1.00, "eis": 3.00, "is_error": false, "step": 3 },
+      { "edge": "Office → Meeting Room",        "reach": 5, "r_hat": 0.80, "eis": 2.80, "is_error": true,  "step": 5 },
+      { "edge": "Entrance Hall → Corridor",     "reach": 2, "r_hat": 0.20, "eis": 2.20, "is_error": false, "step": 1 },
+      { "edge": "Corridor → Lab",               "reach": 1, "r_hat": 0.00, "eis": 2.00, "is_error": false, "step": 20 }
+    ]
+  },
+  "repair": [
+    {
+      "attempt": 1,
+      "edge": "Entrance Hall → Office",
+      "recall_step": 3,
+      "vc_observation": "You walk east from the entrance hall into a spacious office with large windows.",
+      "analysis": "Clear directional cue \"walk east\" matches the labeled direction.",
+      "verdict": "CORRECT",
+      "action": "SKIP"
+    },
+    {
+      "attempt": 2,
+      "edge": "Office → Meeting Room",
+      "recall_step": 5,
+      "vc_observation": "Leaving the office, you head down the hallway to the meeting room.",
+      "analysis": "Text says \"head down the hallway\"  which was mapped to south, but \"down the hallway\" is spatially ambiguous. Given the office faces east, \"down the hallway\" likely means east.",
+      "verdict": "ERROR",
+      "action": "REPAIR: change direction from south to east"
+    }
+  ]
+}

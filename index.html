@@ -1,415 +1,437 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>3D Graph Viewer with Playback</title>
-  <style>
-    body { margin: 0; font-family: sans-serif; overflow: hidden; }
-    #graph { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; }
-    
-    /* Control panel styles */
-    #controls {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: rgba(255, 255, 255, 0.95);
-      padding: 15px;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
-    
-    button {
-      padding: 8px 15px;
-      border: none;
-      border-radius: 5px;
-      background-color: #4CAF50;
-      color: white;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    
-    button:hover {
-      background-color: #45a049;
-    }
-    
-    button:disabled {
-      background-color: #cccccc;
-      cursor: not-allowed;
-    }
-    
-    #stepDisplay {
-      font-weight: bold;
-      margin: 0 10px;
-    }
-    
-    /* Info panel styles */
-    #infoPanel {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background-color: rgba(255, 255, 255, 0.95);
-      padding: 15px;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      z-index: 1000;
-      max-width: 400px;
-      max-height: 80vh;
-      overflow-y: auto;
-    }
-    
-    #infoPanel h3 {
-      margin-top: 0;
-      margin-bottom: 10px;
-    }
-    
-    .new-item {
-      margin: 5px 0;
-      padding: 5px;
-      border-radius: 5px;
-      font-size: 12px;
-    }
-    
-    .new-node {
-      background-color: #e3f2fd;
-      color: #1565c0;
-    }
-    
-    .new-edge {
-      background-color: #e8f5e9;
-      color: #2e7d32;
-    }
-    
-    .conflict-edge {
-      background-color: #ffebee;
-      color: #c62828;
-    }
-    
-    #playButton {
-      width: 80px;
-    }
-    
-    .walkthrough-section {
-      margin-top: 15px;
-      padding-top: 15px;
-      border-top: 1px solid #ddd;
-    }
-    
-    .walkthrough-action {
-      font-weight: bold;
-      color: #1565c0;
-      margin-bottom: 5px;
-    }
-    
-    .walkthrough-observation {
-      background-color: #f5f5f5;
-      padding: 8px;
-      border-radius: 5px;
-      font-size: 11px;
-      line-height: 1.4;
-      max-height: 150px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-      font-family: monospace;
-    }
-  </style>
+  <meta name="description"
+        content="MapRepair: Constructing coherent spatial memory in LLM agents through graph rectification.">
+  <meta name="keywords" content="LLM, Spatial Memory, Graph Repair, Navigation, MANGO, MapRepair, LCA, Edge Impact Score">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MapRepair: Constructing Coherent Spatial Memory in LLM Agents through Graph Rectification</title>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+  <link rel="stylesheet" href="./static/css/custom.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
+
 <body>
-  <div id="graph"></div>
-  
-  <!-- Control Panel -->
-  <div id="controls">
-    <button id="prevButton" onclick="previousStep()">Previous</button>
-    <button id="playButton" onclick="togglePlay()">Play</button>
-    <button id="nextButton" onclick="nextStep()">Next</button>
-    <span id="stepDisplay">Step: 1</span>
-    <input type="range" id="stepSlider" min="1" max="1" value="1" onchange="setStep(this.value)">
+
+<nav class="navbar" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </a>
   </div>
-  
-  <!-- Info Panel -->
-  <div id="infoPanel">
-    <h3>Current Step Info</h3>
-    <div id="newNodes">
-      <strong>New Nodes:</strong>
-      <div id="newNodesList"></div>
-    </div>
-    <div id="newEdges" style="margin-top: 10px;">
-      <strong>New Edges:</strong>
-      <div id="newEdgesList"></div>
-    </div>
-    <div id="walkthrough" class="walkthrough-section">
-      <strong>Walkthrough:</strong>
-      <div id="walkthroughAction" class="walkthrough-action"></div>
-      <div id="walkthroughObservation" class="walkthrough-observation"></div>
+  <div class="navbar-menu">
+    <div class="navbar-start" style="flex-grow: 1; justify-content: center;">
+      <a class="navbar-item" href="#abstract">Abstract</a>
+      <a class="navbar-item" href="#framework">Framework</a>
+      <a class="navbar-item" href="#case-study">Interactive Demo</a>
+      <a class="navbar-item" href="#results">Results</a>
+      <a class="navbar-item" href="#BibTeX">BibTeX</a>
     </div>
   </div>
-  
-  <script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
-  <script src="https://unpkg.com/3d-force-graph@1.73"></script>
-  
-  <script>
-    // Embedded graph data
-    const graphData = {"nodes": [{"id": "end of road", "x": 0, "y": 0, "z": 0, "fx": 0, "fy": 0, "fz": 0, "step": 1}, {"id": "inside building", "x": 55.0, "y": 0.0, "z": 0.0, "fx": 55.0, "fy": 0.0, "fz": 0.0, "step": 1}, {"id": "at \"y2\"", "x": 71.5, "y": 16.5, "z": 16.5, "fx": 71.5, "fy": 16.5, "fz": 16.5, "step": 28}, {"id": "low n/s passage", "x": 71.5, "y": -38.5, "z": 16.5, "fx": 71.5, "fy": -38.5, "fz": 16.5, "step": 25}, {"id": "hall of the mountain king", "x": 71.5, "y": -93.5, "z": 16.5, "fx": 71.5, "fy": -93.5, "fz": 16.5, "step": 22}, {"id": "secret e/w canyon above tight canyon", "x": 16.5, "y": -148.5, "z": 16.5, "fx": 16.5, "fy": -148.5, "fz": 16.5, "step": 37}, {"id": "secret canyon", "x": -38.5, "y": -148.5, "z": 16.5, "fx": -38.5, "fy": -148.5, "fz": 16.5, "step": 38}, {"id": "n/s canyon", "x": 16.5, "y": -148.5, "z": -38.5, "fx": 16.5, "fy": -148.5, "fz": -38.5, "step": 43}, {"id": "in tall e/w canyon", "x": 16.5, "y": -93.5, "z": -38.5, "fx": 16.5, "fy": -93.5, "fz": -38.5, "step": 44}, {"id": "in swiss cheese room", "x": 16.5, "y": -38.5, "z": -38.5, "fx": 16.5, "fy": -38.5, "fz": -38.5, "step": 45}, {"id": "at east end of twopit room", "x": -38.5, "y": -38.5, "z": -38.5, "fx": -38.5, "fy": -38.5, "fz": -38.5, "step": 46}, {"id": "at west end of twopit room", "x": -93.5, "y": -38.5, "z": -38.5, "fx": -93.5, "fy": -38.5, "fz": -38.5, "step": 47}, {"id": "in west pit", "x": -93.5, "y": -38.5, "z": -93.5, "fx": -93.5, "fy": -38.5, "fz": -93.5, "step": 48}, {"id": "oriental room", "x": 33.0, "y": -22.0, "z": -22.0, "fx": 33.0, "fy": -22.0, "fz": -22.0, "step": 54}, {"id": "misty cavern", "x": 33.0, "y": 33.0, "z": -22.0, "fx": 33.0, "fy": 33.0, "fz": -22.0, "step": 55}, {"id": "alcove", "x": -22.0, "y": 33.0, "z": -22.0, "fx": -22.0, "fy": 33.0, "fz": -22.0, "step": 56}, {"id": "plover room", "x": 33.0, "y": 33.0, "z": -22.0, "fx": 33.0, "fy": 33.0, "fz": -22.0, "step": 58}, {"id": "in soft room", "x": 71.5, "y": -38.5, "z": -38.5, "fx": 71.5, "fy": -38.5, "fz": -38.5, "step": 66}, {"id": "bedquilt", "x": 71.5, "y": 16.5, "z": -38.5, "fx": 71.5, "fy": 16.5, "fz": -38.5, "step": 69}, {"id": "at complex junction", "x": 126.5, "y": 16.5, "z": -38.5, "fx": 126.5, "fy": 16.5, "fz": -38.5, "step": 70}, {"id": "in a valley", "x": 0.0, "y": -55.0, "z": 0.0, "fx": 0.0, "fy": -55.0, "fz": 0.0, "step": 4}, {"id": "at slit in streambed", "x": 0.0, "y": -110.0, "z": 0.0, "fx": 0.0, "fy": -110.0, "fz": 0.0, "step": 5}, {"id": "outside grate", "x": 0.0, "y": -165.0, "z": 0.0, "fx": 0.0, "fy": -165.0, "fz": 0.0, "step": 6}, {"id": "below the grate", "x": 0.0, "y": -165.0, "z": -55.0, "fx": 0.0, "fy": -165.0, "fz": -55.0, "step": 9}, {"id": "in cobble", "x": -55.0, "y": -165.0, "z": -55.0, "fx": -55.0, "fy": -165.0, "fz": -55.0, "step": 10}, {"id": "in debris room", "x": -110.0, "y": -165.0, "z": -55.0, "fx": -110.0, "fy": -165.0, "fz": -55.0, "step": 12}, {"id": "sloping e/w canyon", "x": -165.0, "y": -165.0, "z": -55.0, "fx": -165.0, "fy": -165.0, "fz": -55.0, "step": 14}, {"id": "orange river chamber", "x": -220.0, "y": -165.0, "z": -55.0, "fx": -220.0, "fy": -165.0, "fz": -55.0, "step": 15}, {"id": "at top of small pit", "x": -275.0, "y": -165.0, "z": -55.0, "fx": -275.0, "fy": -165.0, "fz": -55.0, "step": 17}, {"id": "in hall of mists", "x": -275.0, "y": -165.0, "z": -110.0, "fx": -275.0, "fy": -165.0, "fz": -110.0, "step": 18}, {"id": "low room", "x": -275.0, "y": -220.0, "z": -110.0, "fx": -275.0, "fy": -220.0, "fz": -110.0, "step": 19}], "links": [{"source": "end of road", "target": "inside building", "action": "east", "color": "#000080", "width": 1, "step": 1}, {"source": "end of road", "target": "in a valley", "action": "south", "color": "#000080", "width": 1, "step": 4}, {"source": "in a valley", "target": "end of road", "action": "north (auto)", "color": "red", "width": 2, "step": 4}, {"source": "inside building", "target": "end of road", "action": "west", "color": "#000080", "width": 1, "step": 1}, {"source": "inside building", "target": "at \"y2\"", "action": "plugh", "color": "#000080", "width": 1, "step": 34}, {"source": "in a valley", "target": "at slit in streambed", "action": "south", "color": "#000080", "width": 1, "step": 5}, {"source": "at slit in streambed", "target": "in a valley", "action": "north (auto)", "color": "red", "width": 2, "step": 5}, {"source": "at \"y2\"", "target": "inside building", "action": "plugh", "color": "#000080", "width": 1, "step": 29}, {"source": "at \"y2\"", "target": "low n/s passage", "action": "south", "color": "#000080", "width": 1, "step": 28}, {"source": "at slit in streambed", "target": "outside grate", "action": "south", "color": "#000080", "width": 1, "step": 6}, {"source": "outside grate", "target": "at slit in streambed", "action": "north (auto)", "color": "red", "width": 2, "step": 6}, {"source": "outside grate", "target": "below the grate", "action": "down", "color": "#000080", "width": 1, "step": 9}, {"source": "below the grate", "target": "outside grate", "action": "up (auto)", "color": "red", "width": 2, "step": 9}, {"source": "below the grate", "target": "in cobble", "action": "west", "color": "#000080", "width": 1, "step": 10}, {"source": "in cobble", "target": "below the grate", "action": "east (auto)", "color": "red", "width": 2, "step": 10}, {"source": "in cobble", "target": "in debris room", "action": "west", "color": "#000080", "width": 1, "step": 12}, {"source": "in debris room", "target": "in cobble", "action": "east (auto)", "color": "red", "width": 2, "step": 12}, {"source": "in debris room", "target": "sloping e/w canyon", "action": "west", "color": "#000080", "width": 1, "step": 14}, {"source": "sloping e/w canyon", "target": "in debris room", "action": "east (auto)", "color": "red", "width": 2, "step": 14}, {"source": "sloping e/w canyon", "target": "orange river chamber", "action": "west", "color": "#000080", "width": 1, "step": 15}, {"source": "orange river chamber", "target": "sloping e/w canyon", "action": "east (auto)", "color": "red", "width": 2, "step": 15}, {"source": "orange river chamber", "target": "at top of small pit", "action": "west", "color": "#000080", "width": 1, "step": 17}, {"source": "at top of small pit", "target": "orange river chamber", "action": "east (auto)", "color": "red", "width": 2, "step": 17}, {"source": "at top of small pit", "target": "in hall of mists", "action": "down", "color": "#000080", "width": 1, "step": 18}, {"source": "in hall of mists", "target": "at top of small pit", "action": "up (auto)", "color": "red", "width": 2, "step": 18}, {"source": "in hall of mists", "target": "low room", "action": "south", "color": "#000080", "width": 1, "step": 19}, {"source": "in hall of mists", "target": "hall of the mountain king", "action": "north", "color": "#000080", "width": 1, "step": 22}, {"source": "hall of the mountain king", "target": "in hall of mists", "action": "south (auto)", "color": "red", "width": 2, "step": 22}, {"source": "low room", "target": "in hall of mists", "action": "north", "color": "#000080", "width": 1, "step": 19}, {"source": "hall of the mountain king", "target": "low n/s passage", "action": "north", "color": "#000080", "width": 1, "step": 25}, {"source": "hall of the mountain king", "target": "secret e/w canyon above tight canyon", "action": "southwest", "color": "#000080", "width": 1, "step": 37}, {"source": "secret e/w canyon above tight canyon", "target": "hall of the mountain king", "action": "northeast (auto)", "color": "red", "width": 2, "step": 37}, {"source": "low n/s passage", "target": "at \"y2\"", "action": "north", "color": "#000080", "width": 1, "step": 28}, {"source": "low n/s passage", "target": "hall of the mountain king", "action": "south", "color": "#000080", "width": 1, "step": 25}, {"source": "secret e/w canyon above tight canyon", "target": "secret canyon", "action": "west", "color": "#000080", "width": 1, "step": 38}, {"source": "secret e/w canyon above tight canyon", "target": "n/s canyon", "action": "down", "color": "#000080", "width": 1, "step": 43}, {"source": "n/s canyon", "target": "secret e/w canyon above tight canyon", "action": "up (auto)", "color": "red", "width": 2, "step": 43}, {"source": "secret canyon", "target": "secret e/w canyon above tight canyon", "action": "east", "color": "#000080", "width": 1, "step": 38}, {"source": "n/s canyon", "target": "in tall e/w canyon", "action": "north", "color": "#000080", "width": 1, "step": 44}, {"source": "in tall e/w canyon", "target": "n/s canyon", "action": "south (auto)", "color": "red", "width": 2, "step": 44}, {"source": "in tall e/w canyon", "target": "in swiss cheese room", "action": "north", "color": "#000080", "width": 1, "step": 45}, {"source": "in swiss cheese room", "target": "in tall e/w canyon", "action": "south (auto)", "color": "red", "width": 2, "step": 45}, {"source": "in swiss cheese room", "target": "at east end of twopit room", "action": "west", "color": "#000080", "width": 1, "step": 46}, {"source": "in swiss cheese room", "target": "in swiss cheese room", "action": "northwest", "color": "#000080", "width": 1, "step": 53}, {"source": "in swiss cheese room", "target": "oriental room", "action": "northwest", "color": "#000080", "width": 1, "step": 54}, {"source": "in swiss cheese room", "target": "in soft room", "action": "east", "color": "#000080", "width": 1, "step": 66}, {"source": "in swiss cheese room", "target": "bedquilt", "action": "northeast", "color": "#000080", "width": 1, "step": 69}, {"source": "bedquilt", "target": "in swiss cheese room", "action": "southwest (auto)", "color": "red", "width": 2, "step": 69}, {"source": "at east end of twopit room", "target": "at west end of twopit room", "action": "west", "color": "#000080", "width": 1, "step": 47}, {"source": "at east end of twopit room", "target": "in swiss cheese room", "action": "east", "color": "#000080", "width": 1, "step": 46}, {"source": "oriental room", "target": "misty cavern", "action": "north", "color": "#000080", "width": 1, "step": 55}, {"source": "oriental room", "target": "in swiss cheese room", "action": "southeast", "color": "#000080", "width": 1, "step": 54}, {"source": "in soft room", "target": "in swiss cheese room", "action": "west", "color": "#000080", "width": 1, "step": 66}, {"source": "bedquilt", "target": "at complex junction", "action": "east", "color": "#000080", "width": 1, "step": 70}, {"source": "at complex junction", "target": "bedquilt", "action": "west (auto)", "color": "red", "width": 2, "step": 70}, {"source": "at west end of twopit room", "target": "in west pit", "action": "down", "color": "#000080", "width": 1, "step": 48}, {"source": "at west end of twopit room", "target": "at east end of twopit room", "action": "east", "color": "#000080", "width": 1, "step": 47}, {"source": "in west pit", "target": "at west end of twopit room", "action": "up", "color": "#000080", "width": 1, "step": 48}, {"source": "misty cavern", "target": "alcove", "action": "west", "color": "#000080", "width": 1, "step": 56}, {"source": "misty cavern", "target": "oriental room", "action": "south", "color": "#000080", "width": 1, "step": 55}, {"source": "alcove", "target": "plover room", "action": "east", "color": "#000080", "width": 1, "step": 58}, {"source": "alcove", "target": "misty cavern", "action": "northwest", "color": "#000080", "width": 1, "step": 62}, {"source": "plover room", "target": "alcove", "action": "west", "color": "#000080", "width": 1, "step": 58}], "walkthrough": [{"step": 0, "action": "Init", "observation": "(Please type HELP for instructions and information.)\n\n\nADVENTURE\nThe Interactive Original\nBy Will Crowther (1976) and Don Woods (1977)\nReconstructed in three steps by:\nDonald Ekman, David M. Baggett (1993) and Graham Nelson (1994)\n[In memoriam Stephen Bishop (1820?-1857): GN]\n\nRelease 9 / Serial number 060321 / Inform v6.31 Library 6/11 S\n\nAt End Of Road\nYou are standing at the end of a road before a small brick building. Around you is a forest. A small stream flows out of the building and down a gully."}, {"step": 1, "action": "east", "observation": "You are inside a building, a well house for a large spring.\n\nThere are some keys on the ground here.\n\nThere is tasty food here.\n\nThere is a shiny brass lamp nearby.\n\nThere is an empty bottle here."}, {"step": 2, "action": "get all", "observation": "tasty food: Taken.\nbrass lantern: Taken.\nsmall bottle: Taken.\nstream: The bottle is now full of water.\nwell house: That's hardly portable.\nspring: That's hardly portable.\npair of 1 foot diameter sewer pipes: That's hardly portable."}, {"step": 3, "action": "west", "observation": ""}, {"step": 4, "action": "south", "observation": "You are in a valley in the forest beside a stream tumbling along a rocky bed."}, {"step": 5, "action": "south", "observation": "At your feet all the water of the stream splashes into a 2-inch slit in the rock. Downstream the streambed is bare rock."}, {"step": 6, "action": "south", "observation": "You are in a 20-foot depression floored with bare dirt. Set into the dirt is a strong steel grate mounted in concrete. A dry streambed leads into the depression."}, {"step": 7, "action": "unlock grate with keys", "observation": ""}, {"step": 8, "action": "open grate", "observation": ""}, {"step": 9, "action": "down", "observation": "You are in a small chamber beneath a 3x3 steel grate to the surface. A low crawl over cobbles leads inward to the west.\n\nThe grate stands open."}, {"step": 10, "action": "west", "observation": "You are crawling over cobbles in a low passage. There is a dim light at the east end of the passage.\n\nThere is a small wicker cage discarded nearby."}, {"step": 11, "action": "get cage", "observation": ""}, {"step": 12, "action": "west", "observation": "It is pitch dark, and you can't see a thing."}, {"step": 13, "action": "light lamp", "observation": "\nIn Debris Room\nYou are in a debris room filled with stuff washed in from the surface. A low wide passage with cobbles becomes plugged with mud and debris here, but an awkward canyon leads upward and west. \n\nA note on the wall says, \"Magic word XYZZY.\"\n\nA three foot black rod with a rusty star on one end lies nearby."}, {"step": 14, "action": "west", "observation": "You are in an awkward sloping east/west canyon."}, {"step": 15, "action": "west", "observation": "You are in a splendid chamber thirty feet high. The walls are frozen rivers of orange stone. An awkward canyon and a good passage exit from east and west sides of the chamber.\n\nA cheerful little bird is sitting here singing."}, {"step": 16, "action": "get bird", "observation": ""}, {"step": 17, "action": "west", "observation": "At your feet is a small pit breathing traces of white mist. A west passage ends here except for a small crack leading on. \n\nRough stone steps lead down the pit."}, {"step": 18, "action": "down", "observation": "You are at one end of a vast hall stretching forward out of sight to the west. There are openings to either side. Nearby, a wide stone staircase leads downward. The hall is filled with wisps of white mist swaying to and fro almost as if alive. A cold wind blows up the staircase. There is a passage at the top of a dome behind you. \n\nRough stone steps lead up the dome.\n\n[Your score has just gone up by twenty-five points.]"}, {"step": 19, "action": "south", "observation": "This is a low room with a crude note on the wall: \n\n\"You won't get it up the steps\".\n\nThere is a large sparkling nugget of gold here!"}, {"step": 20, "action": "get nugget", "observation": "\n[Your score has just gone up by seven points.]"}, {"step": 21, "action": "north", "observation": ""}, {"step": 22, "action": "north", "observation": "You are in the hall of the mountain king, with passages off in all directions.\n\nA huge green fierce snake bars the way!"}, {"step": 23, "action": "drop bird", "observation": "\nThe little bird attacks the green snake, and in an astounding flurry drives the snake away."}, {"step": 24, "action": "get bird", "observation": ""}, {"step": 25, "action": "north", "observation": "You are in a low N/S passage at a hole in the floor. The hole goes down to an E/W passage.\n\nThere are bars of silver here!"}, {"step": 26, "action": "drop keys", "observation": ""}, {"step": 27, "action": "get silver", "observation": "\n[Your score has just gone up by seven points.]"}, {"step": 28, "action": "north", "observation": "You are in a large room, with a passage to the south, a passage to the west, and a wall of broken rock to the east. There is a large \"Y2\" on a rock in the room's center."}, {"step": 29, "action": "plugh", "observation": "You are inside a building, a well house for a large spring."}, {"step": 30, "action": "drop silver", "observation": "\n[Your score has just gone up by five points.]"}, {"step": 31, "action": "drop nugget", "observation": "\n[Your score has just gone up by five points.]"}, {"step": 32, "action": "drop cage", "observation": ""}, {"step": 33, "action": "drop food", "observation": ""}, {"step": 34, "action": "plugh", "observation": "You are in a large room, with a passage to the south, a passage to the west, and a wall of broken rock to the east. There is a large \"Y2\" on a rock in the room's center."}, {"step": 35, "action": "south", "observation": "\nYou can see a set of keys here."}, {"step": 36, "action": "south", "observation": ""}, {"step": 37, "action": "southwest", "observation": "You are in a secret canyon which here runs E/W. It crosses over a very tight canyon 15 feet below. If you go down you may not be able to get back up."}, {"step": 38, "action": "west", "observation": "You are in a secret canyon which exits to the north and east.\n\nA huge green fierce dragon bars the way!\nThe dragon is sprawled out on the Persian rug!"}, {"step": 39, "action": "kill dragon", "observation": ""}, {"step": 40, "action": "yes", "observation": ""}, {"step": 41, "action": "get rug", "observation": "\n[Your score has just gone up by seven points.]"}, {"step": 42, "action": "east", "observation": ""}, {"step": 43, "action": "down", "observation": "You are at a wide place in a very tight N/S canyon."}, {"step": 44, "action": "north", "observation": "You are in a tall E/W canyon. A low tight crawl goes 3 feet north and seems to open up."}, {"step": 45, "action": "north", "observation": "You are in a room whose walls resemble swiss cheese. Obvious passages go west, east, ne, and nw. Part of the room is occupied by a large bedrock block."}, {"step": 46, "action": "west", "observation": "You are at the east end of the twopit room. The floor here is littered with thin rock slabs, which make it easy to descend the pits. There is a path here bypassing the pits to connect passages from east and west. There are holes all over, but the only big one is on the wall directly over the west pit where you can't get to it."}, {"step": 47, "action": "west", "observation": "You are at the west end of the twopit room. There is a large hole in the wall above the pit at this end of the room."}, {"step": 48, "action": "down", "observation": "You are at the bottom of the western pit in the twopit room. There is a large hole in the wall about 25 feet above you.\nThere is a tiny little plant in the pit, murmuring \"Water, water, ...\""}, {"step": 49, "action": "pour water on plant", "observation": "\nThere is a 12-foot-tall beanstalk stretching up out of the pit, bellowing \"Water!! Water!!\""}, {"step": 50, "action": "up", "observation": "The top of a 12-foot-tall beanstalk is poking out of the west pit."}, {"step": 51, "action": "east", "observation": "The top of a 12-foot-tall beanstalk is poking out of the west pit."}, {"step": 52, "action": "east", "observation": ""}, {"step": 53, "action": "northwest", "observation": ""}, {"step": 54, "action": "northwest", "observation": "This is the oriental room. Ancient oriental cave drawings cover the walls. A gently sloping passage leads upward to the north, another passage leads se, and a hands and knees crawl leads west.\n\nYou can see a ming vase here."}, {"step": 55, "action": "north", "observation": "You are following a wide path around the outer edge of a large cavern. Far below, through a heavy white mist, strange splashing noises can be heard. The mist rises up through a fissure in the ceiling. The path exits to the south and west."}, {"step": 56, "action": "west", "observation": "You are in an alcove. A small northwest path seems to widen after a short distance. An extremely tight tunnel leads east. It looks like a very tight squeeze. An eerie light can be seen at the other end."}, {"step": 57, "action": "drop all", "observation": "small bottle: Dropped.\nbrass lantern: Dropped.\n\n[Your score has just gone down by five points.]"}, {"step": 58, "action": "east", "observation": "You're in a small chamber lit by an eerie green light. An extremely narrow tunnel exits to the west. A dark corridor leads northeast.\n\nThere is an emerald here the size of a plover's egg!"}, {"step": 59, "action": "get emerald", "observation": "\n[Your score has just gone up by seven points.]"}, {"step": 60, "action": "west", "observation": "\nYour lamp is here, gleaming brightly.\nThe Persian rug is spread out on the floor here.\n\nYou can also see a small bottle (which is empty) here."}, {"step": 61, "action": "get all", "observation": "small bottle: Taken.\nPersian rug: Taken!\n\n[Your score has just gone up by five points.]"}, {"step": 62, "action": "northwest", "observation": ""}, {"step": 63, "action": "south", "observation": "\nYou can see a ming vase here."}, {"step": 64, "action": "get vase", "observation": "\n[Your score has just gone up by seven points.]"}, {"step": 65, "action": "southeast", "observation": ""}, {"step": 66, "action": "east", "observation": "You are in the soft room. The walls are covered with heavy curtains, the floor with a thick pile carpet. Moss covers the ceiling.\n\nA small velvet pillow lies on the floor."}, {"step": 67, "action": "get pillow", "observation": ""}, {"step": 68, "action": "west", "observation": ""}, {"step": 69, "action": "northeast", "observation": "You are in bedquilt, a long east/west passage with holes everywhere. To explore at random select north, south, up, or down."}, {"step": 70, "action": "east", "observation": "You are at a complex junction. A low hands and knees passage from the north joins a higher crawl from the east to make a walking passage going west. There is also a large room above. The air is damp here."}, {"step": 71, "action": "up", "observation": "You are in a large room full of dusty rocks. There is a big hole in the floor. There are cracks everywhere, and a passage leading east."}, {"step": 72, "action": "east", "observation": "You are in a dirty broken passage. To the east is a crawl. To the west is a large passage. Above you is a hole to another passage."}, {"step": 73, "action": "up", "observation": "\nYou can see a set of keys here."}, {"step": 74, "action": "north", "observation": ""}, {"step": 75, "action": "plugh", "observation": "You are inside a building, a well house for a large spring.\n\nYou can see some tasty food, a wicker cage (which is closed) (in which is a little bird), a large gold nugget and some bars of silver here."}, {"step": 76, "action": "drop pillow", "observation": ""}, {"step": 77, "action": "drop rug", "observation": "\n[Your score has just gone up by nine points.]"}, {"step": 78, "action": "drop vase", "observation": "Safely deposited.\n\n[Your score has just gone up by nine points.]"}, {"step": 79, "action": "drop emerald", "observation": "\n[Your score has just gone up by nine points.]"}, {"step": 80, "action": "fill bottle", "observation": ""}, {"step": 81, "action": "get food", "observation": ""}, {"step": 82, "action": "plugh", "observation": "You are in a large room, with a passage to the south, a passage to the west, and a wall of broken rock to the east. There is a large \"Y2\" on a rock in the room's center."}, {"step": 83, "action": "plover", "observation": "You're in a small chamber lit by an eerie green light. An extremely narrow tunnel exits to the west. A dark corridor leads northeast."}, {"step": 84, "action": "northeast", "observation": "You're in the dark-room. A corridor leading south is the only exit.\n\nA massive stone tablet imbedded in the wall reads: \"Congratulations on bringing light into the dark-room!\"\n\nThere is a platinum pyramid here, 8 inches on a side!"}, {"step": 85, "action": "get pyramid", "observation": "\n[Your score has just gone up by seven points.]"}, {"step": 86, "action": "south", "observation": ""}, {"step": 87, "action": "plover", "observation": "You are in a large room, with a passage to the south, a passage to the west, and a wall of broken rock to the east. There is a large \"Y2\" on a rock in the room's center."}, {"step": 88, "action": "plugh", "observation": "You are inside a building, a well house for a large spring.\nThe Persian rug is spread out on the floor here.\n\nYou can also see an emerald the size of a plover's egg, a ming vase, a velvet pillow, a wicker cage (which is closed) (in which is a little bird), a large gold nugget and some bars of silver here."}, {"step": 89, "action": "drop pyramid", "observation": "\n[Your score has just gone up by nine points.]"}, {"step": 90, "action": "plugh", "observation": "You are in a large room, with a passage to the south, a passage to the west, and a wall of broken rock to the east. There is a large \"Y2\" on a rock in the room's center."}, {"step": 91, "action": "south", "observation": "\nYou can see a set of keys here."}, {"step": 92, "action": "get keys", "observation": ""}, {"step": 93, "action": "down", "observation": ""}, {"step": 94, "action": "west", "observation": ""}, {"step": 95, "action": "down", "observation": ""}, {"step": 96, "action": "west", "observation": ""}, {"step": 97, "action": "west", "observation": ""}, {"step": 98, "action": "west", "observation": "The top of a 12-foot-tall beanstalk is poking out of the west pit."}, {"step": 99, "action": "west", "observation": "The top of a 12-foot-tall beanstalk is poking out of the west pit."}, {"step": 100, "action": "down", "observation": "There is a 12-foot-tall beanstalk stretching up out of the pit, bellowing \"Water!! Water!!\""}, {"step": 101, "action": "pour water on beanstalk", "observation": "\nThere is a gigantic beanstalk stretching all the way up to the hole."}, {"step": 102, "action": "up", "observation": "There is a huge beanstalk growing out of the west pit up to the hole."}, {"step": 103, "action": "east", "observation": "There is a huge beanstalk growing out of the west pit up to the hole."}, {"step": 104, "action": "down", "observation": "You are at the bottom of the eastern pit in the twopit room. There is a small pool of oil in one corner of the pit."}, {"step": 105, "action": "fill bottle", "observation": ""}, {"step": 106, "action": "up", "observation": "There is a huge beanstalk growing out of the west pit up to the hole."}, {"step": 107, "action": "west", "observation": "There is a huge beanstalk growing out of the west pit up to the hole."}, {"step": 108, "action": "down", "observation": "There is a gigantic beanstalk stretching all the way up to the hole."}, {"step": 109, "action": "climb beanstalk", "observation": "\nIn Narrow Corridor\nYou are in a long, narrow corridor stretching out of sight to the west. At the eastern end is a hole through which you can see a profusion of leaves."}, {"step": 110, "action": "west", "observation": "You are in the giant room. The ceiling here is too high up for your lamp to show it. Cavernous passages lead east, north, and south. On the west wall is scrawled the inscription, \"Fee fie foe foo\" [sic].\n\nThere is a large nest here, full of golden eggs!"}, {"step": 111, "action": "get eggs", "observation": "\nA threatening little dwarf comes out of the shadows!\n\n[Your score has just gone up by seven points.]"}, {"step": 112, "action": "wait", "observation": "\nThe dwarf throws a nasty little axe at you, misses, curses, and runs away."}, {"step": 113, "action": "get axe", "observation": ""}, {"step": 114, "action": "north", "observation": "You are at one end of an immense north/south passage.\n\nThe way north is barred by a massive, rusty, iron door."}, {"step": 115, "action": "oil door", "observation": ""}, {"step": 116, "action": "north", "observation": "\nIn Cavern With Waterfall\nYou are in a magnificent cavern with a rushing stream, which cascades over a sparkling waterfall into a roaring whirlpool which disappears through a hole in the floor. Passages exit to the south and west.\n\nThere is a jewel-encrusted trident here!"}, {"step": 117, "action": "get trident", "observation": "\n[Your score has just gone up by seven points.]"}, {"step": 118, "action": "west", "observation": "You are at the top of a steep incline above a large room. You could climb down here, but you would not be able to climb up. There is a passage leading back to the north."}, {"step": 119, "action": "down", "observation": "You are in a large low room. Crawls lead north, se, and sw."}, {"step": 120, "action": "drop trident", "observation": "\n[Your score has just gone down by five points.]"}, {"step": 121, "action": "southwest", "observation": "You are in a long winding corridor sloping out of sight in both directions."}, {"step": 122, "action": "up", "observation": "You are on one side of a large, deep chasm. A heavy white mist rising up from below obscures all view of the far side. A southwest path leads away from the chasm into a winding corridor.\nA rickety wooden bridge extends across the chasm, vanishing into the mist. \n\nA sign posted on the bridge reads, \"Stop! Pay troll!\"\nThe troll is nowhere to be seen."}, {"step": 123, "action": "northeast", "observation": ""}, {"step": 124, "action": "give eggs", "observation": "The troll catches your treasure and scurries away out of sight.\n\n[Your score has just gone down by five points.]"}, {"step": 125, "action": "northeast", "observation": "You are on the far side of the chasm. A northeast path leads away from the chasm on this side.\nA rickety wooden bridge extends across the chasm, vanishing into the mist. \n\nA sign posted on the bridge reads, \"Stop! Pay troll!\"\nThe troll is nowhere to be seen."}, {"step": 126, "action": "northeast", "observation": "You're in a long east/west corridor. A faint rumbling noise can be heard in the distance."}, {"step": 127, "action": "east", "observation": "The path forks here. The left fork leads northeast. A dull rumbling seems to get louder in that direction. The right fork leads southeast down a gentle slope. The main corridor enters from the west."}, {"step": 128, "action": "down", "observation": "You are walking along a gently sloping north/south passage lined with oddly shaped limestone formations."}, {"step": 129, "action": "south", "observation": "You are standing at the entrance to a large, barren room. A sign posted above the entrance reads: \"Caution! Bear in room!\""}, {"step": 130, "action": "east", "observation": "You are inside a barren room. The center of the room is completely empty except for some dust. Marks in the dust lead away toward the far end of the room. The only exit is the way you came in.\nThere is a ferocious cave bear eyeing you from the far end of the room!\nThe bear is held back by a solid gold chain."}, {"step": 131, "action": "give food to bear", "observation": ""}, {"step": 132, "action": "unlock chain with keys", "observation": ""}, {"step": 133, "action": "get bear", "observation": ""}, {"step": 134, "action": "get chain", "observation": "\n[Your score has just gone up by seven points.]"}, {"step": 135, "action": "west", "observation": "\nThe bear lumbers along behind you."}, {"step": 136, "action": "west", "observation": "\nThe bear lumbers along behind you."}, {"step": 137, "action": "north", "observation": "\nThe bear lumbers along behind you."}, {"step": 138, "action": "northeast", "observation": "The walls are quite warm here. From the north can be heard a steady roar, so loud that the entire cave seems to be trembling. Another passage leads south, and a low crawl goes east.\n\nThe bear lumbers along behind you."}, {"step": 139, "action": "east", "observation": "You are in a small chamber filled with large boulders. The walls are very warm, causing the air in the room to be almost stifling from the heat. The only exit is a crawl heading west, through which is coming a low rumbling.\n\nYou can see a selection of rare spices here.\n\nThe bear lumbers along behind you."}, {"step": 140, "action": "get spices", "observation": "\n[Your score has just gone up by seven points.]"}, {"step": 141, "action": "west", "observation": "\nThe bear lumbers along behind you."}, {"step": 142, "action": "south", "observation": "\nThe bear lumbers along behind you."}, {"step": 143, "action": "west", "observation": "\nThe bear lumbers along behind you."}, {"step": 144, "action": "west", "observation": "A rickety wooden bridge extends across the chasm, vanishing into the mist. \n\nA sign posted on the bridge reads, \"Stop! Pay troll!\"\nThe troll is nowhere to be seen.\n\nThe bear lumbers along behind you."}, {"step": 145, "action": "southwest", "observation": ""}, {"step": 146, "action": "drop bear", "observation": ""}, {"step": 147, "action": "southwest", "observation": "A rickety wooden bridge extends across the chasm, vanishing into the mist. \n\nA sign posted on the bridge reads, \"Stop! Pay troll!\"\nThe troll is nowhere to be seen.\n\nA threatening little dwarf comes out of the shadows!"}, {"step": 148, "action": "southwest", "observation": "\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 149, "action": "down", "observation": "\nYou can see a jeweled trident here.\n\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 150, "action": "get trident", "observation": "\nThe dwarf throws a nasty little knife at you, but misses!\n\n[Your score has just gone up by five points.]"}, {"step": 151, "action": "southeast", "observation": "\nThe dwarf stalks after you..."}, {"step": 152, "action": "southeast", "observation": "\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 153, "action": "northeast", "observation": "\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 154, "action": "east", "observation": "\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 155, "action": "drop keys", "observation": "\nTiring of this, the dwarf slips away."}, {"step": 156, "action": "east", "observation": "You are in an anteroom leading to a large passage to the east. Small passages go west and up. The remnants of recent digging are evident.\n\nA sign in midair here says \"Cave under construction beyond this point. Proceed at own risk. [Witt Construction Company]\"\n\nThere are a few recent issues of \"Spelunker Today\" magazine here."}, {"step": 157, "action": "get magazine", "observation": ""}, {"step": 158, "action": "east", "observation": "You are at Witt's End. Passages lead off in *all* directions."}, {"step": 159, "action": "drop magazine", "observation": "\n[Your score has just gone up by one point.]"}, {"step": 160, "action": "west", "observation": "You are in an anteroom leading to a large passage to the east. Small passages go west and up. The remnants of recent digging are evident.\n\nA sign in midair here says \"Cave under construction beyond this point. Proceed at own risk. [Witt Construction Company]\""}, {"step": 161, "action": "up", "observation": "\nYou can see a set of keys here."}, {"step": 162, "action": "north", "observation": "You're in a large room carved out of sedimentary rock. The floor and walls are littered with bits of shells imbedded in the stone. A shallow passage proceeds downward, and a somewhat steeper one leads up. A low hands and knees passage enters from the south.\nThere is an enormous clam here with its shell tightly closed."}, {"step": 163, "action": "open clam with trident", "observation": ""}, {"step": 164, "action": "down", "observation": "You are in a long sloping corridor with ragged sharp walls.\n\nA threatening little dwarf comes out of the shadows!"}, {"step": 165, "action": "down", "observation": "You are in a cul-de-sac about eight feet across.\n\nOff to one side lies a glistening pearl!\n\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 166, "action": "get pearl", "observation": "\nThe dwarf throws a nasty little knife at you, but misses!\n\n[Your score has just gone up by seven points.]"}, {"step": 167, "action": "up", "observation": "\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 168, "action": "up", "observation": "There is an enormous oyster here with its shell tightly closed.\n\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 169, "action": "south", "observation": "\nYou can see a set of keys here.\n\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 170, "action": "up", "observation": "\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 171, "action": "east", "observation": "\nThe dwarf stalks after you..."}, {"step": 172, "action": "up", "observation": "\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 173, "action": "north", "observation": "\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!\n\nA bearded pirate appears, catches sight of the dwarf and runs away."}, {"step": 174, "action": "plugh", "observation": "You are inside a building, a well house for a large spring.\nThe Persian rug is spread out on the floor here.\n\nYou can also see a platinum pyramid, an emerald the size of a plover's egg, a ming vase, a velvet pillow, a wicker cage (which is closed) (in which is a little bird), a large gold nugget and some bars of silver here."}, {"step": 175, "action": "drop trident", "observation": "\n[Your score has just gone up by nine points.]"}, {"step": 176, "action": "drop chain", "observation": "\n[Your score has just gone up by nine points.]"}, {"step": 177, "action": "drop spices", "observation": "\n[Your score has just gone up by nine points.]"}, {"step": 178, "action": "drop pearl", "observation": "\n[Your score has just gone up by nine points.]"}, {"step": 179, "action": "plugh", "observation": "You are in a large room, with a passage to the south, a passage to the west, and a wall of broken rock to the east. There is a large \"Y2\" on a rock in the room's center.\n\nA threatening little dwarf hides in the shadows.\n\nA hollow voice says, \"Plugh.\"\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 180, "action": "south", "observation": "\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 181, "action": "down", "observation": "\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 182, "action": "west", "observation": "\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 183, "action": "down", "observation": "\nYou can see a set of keys here.\n\nThe dwarf stalks after you...\n\nTiring of this, the dwarf slips away."}, {"step": 184, "action": "west", "observation": ""}, {"step": 185, "action": "west", "observation": ""}, {"step": 186, "action": "west", "observation": "There is a huge beanstalk growing out of the west pit up to the hole.\n\nThere are faint rustling noises from the darkness behind you. As you turn toward them, you spot a bearded pirate. He is carrying a large chest. \n\n\"Shiver me timbers!\" he cries, \"I've been spotted! I'd best hie meself off to the maze to hide me chest!\" \n\nWith that, he vanishes into the gloom."}, {"step": 187, "action": "west", "observation": "There is a huge beanstalk growing out of the west pit up to the hole."}, {"step": 188, "action": "down", "observation": "There is a gigantic beanstalk stretching all the way up to the hole."}, {"step": 189, "action": "climb beanstalk", "observation": "\nIn Narrow Corridor\nYou are in a long, narrow corridor stretching out of sight to the west. At the eastern end is a hole through which you can see a profusion of leaves."}, {"step": 190, "action": "west", "observation": ""}, {"step": 191, "action": "fee", "observation": ""}, {"step": 192, "action": "fie", "observation": ""}, {"step": 193, "action": "foe", "observation": "\nA threatening little dwarf comes out of the shadows!"}, {"step": 194, "action": "foo", "observation": "\nA large nest full of golden eggs suddenly appears out of nowhere!\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 195, "action": "get eggs", "observation": "\nThe dwarf throws a nasty little knife at you, but misses!\n\n[Your score has just gone up by five points.]"}, {"step": 196, "action": "south", "observation": "\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 197, "action": "east", "observation": "There is a gigantic beanstalk stretching all the way up to the hole."}, {"step": 198, "action": "up", "observation": "There is a huge beanstalk growing out of the west pit up to the hole.\n\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 199, "action": "east", "observation": "There is a huge beanstalk growing out of the west pit up to the hole.\n\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 200, "action": "east", "observation": "\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 201, "action": "northeast", "observation": "\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 202, "action": "east", "observation": "\nYou can see a set of keys here.\n\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 203, "action": "up", "observation": "\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 204, "action": "east", "observation": "\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 205, "action": "throw axe at dwarf", "observation": ""}, {"step": 206, "action": "up", "observation": ""}, {"step": 207, "action": "north", "observation": ""}, {"step": 208, "action": "plugh", "observation": "You are inside a building, a well house for a large spring.\nA solid golden chain lies in coils on the ground!\nThe Persian rug is spread out on the floor here.\n\nYou can also see a glistening pearl, a selection of rare spices, a jeweled trident, a platinum pyramid, an emerald the size of a plover's egg, a ming vase, a velvet pillow, a wicker cage (which is closed) (in which is a little bird), a large gold nugget and some bars of silver here."}, {"step": 209, "action": "drop eggs", "observation": "\n[Your score has just gone up by nine points.]"}, {"step": 210, "action": "plugh", "observation": "You are in a large room, with a passage to the south, a passage to the west, and a wall of broken rock to the east. There is a large \"Y2\" on a rock in the room's center."}, {"step": 211, "action": "south", "observation": ""}, {"step": 212, "action": "south", "observation": "\nA threatening little dwarf comes out of the shadows!"}, {"step": 213, "action": "south", "observation": "You are in the south side chamber.\n\nThere is precious jewelry here!\n\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 214, "action": "get jewelry", "observation": "\nThe dwarf throws a nasty little knife at you, but misses!\n\n[Your score has just gone up by seven points.]"}, {"step": 215, "action": "north", "observation": "\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 216, "action": "west", "observation": "You are in the west side chamber of the hall of the mountain king. A passage continues west and up here.\n\nThere are many coins here!\n\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 217, "action": "get coins", "observation": "\nThe dwarf throws a nasty little knife at you, but misses!\n\n[Your score has just gone up by seven points.]"}, {"step": 218, "action": "west", "observation": "You are at a crossover of a high N/S passage and a low E/W one.\n\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 219, "action": "west", "observation": "You are at the east end of a very long hall apparently without side chambers. To the east a low wide crawl slants up. To the north a round two foot hole slants down.\n\nThe dwarf stalks after you...\n\nTiring of this, the dwarf slips away."}, {"step": 220, "action": "east", "observation": "You are at the west end of the hall of mists. A low wide crawl continues west and another goes north. To the south is a little passage 6 feet off the floor."}, {"step": 221, "action": "east", "observation": "You are on the west side of the fissure in the hall of mists.\n\nThere are diamonds here!"}, {"step": 222, "action": "get diamonds", "observation": "\n[Your score has just gone up by seven points.]"}, {"step": 223, "action": "north", "observation": "\nAt West End of Hall of Mists"}, {"step": 224, "action": "west", "observation": ""}, {"step": 225, "action": "north", "observation": ""}, {"step": 226, "action": "east", "observation": ""}, {"step": 227, "action": "east", "observation": ""}, {"step": 228, "action": "north", "observation": "\nA threatening little dwarf comes out of the shadows!"}, {"step": 229, "action": "north", "observation": "\nA hollow voice says, \"Plugh.\""}, {"step": 230, "action": "plugh", "observation": "You are inside a building, a well house for a large spring.\nA solid golden chain lies in coils on the ground!\nThe Persian rug is spread out on the floor here.\n\nYou can also see a nest of golden eggs, a glistening pearl, a selection of rare spices, a jeweled trident, a platinum pyramid, an emerald the size of a plover's egg, a ming vase, a velvet pillow, a wicker cage (which is closed) (in which is a little bird), a large gold nugget and some bars of silver here."}, {"step": 231, "action": "drop diamonds", "observation": "\n[Your score has just gone up by five points.]"}, {"step": 232, "action": "drop coins", "observation": "\n[Your score has just gone up by five points.]"}, {"step": 233, "action": "drop jewelry", "observation": "\n[Your score has just gone up by five points.]"}, {"step": 234, "action": "plugh", "observation": "You are in a large room, with a passage to the south, a passage to the west, and a wall of broken rock to the east. There is a large \"Y2\" on a rock in the room's center.\n\nA hollow voice says, \"Plugh.\""}, {"step": 235, "action": "south", "observation": "\nA threatening little dwarf comes out of the shadows!"}, {"step": 236, "action": "south", "observation": "\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 237, "action": "west", "observation": "\nThe dwarf stalks after you...\n\nThe dwarf throws a nasty little knife at you, but misses!"}, {"step": 238, "action": "west", "observation": "\nThe dwarf stalks after you...\n\nTiring of this, the dwarf slips away."}, {"step": 239, "action": "west", "observation": ""}, {"step": 240, "action": "east", "observation": ""}, {"step": 241, "action": "south", "observation": "You are in a maze of twisty little passages, all alike."}, {"step": 242, "action": "east", "observation": "You are in a maze of twisty little passages, all alike."}, {"step": 243, "action": "south", "observation": "You are in a maze of twisty little passages, all alike."}, {"step": 244, "action": "north", "observation": "\nDead End\nThis is the pirate's dead end.\n\nThe pirate's treasure chest is here!"}, {"step": 245, "action": "get all", "observation": "\nA sepulchral voice reverberating through the cave says, \"Cave closing soon. All adventurers exit immediately through main office.\"\n\n[Your score has just gone up by thirty-two points.]"}, {"step": 246, "action": "southeast", "observation": "You are in a maze of twisty little passages, all alike."}, {"step": 247, "action": "north", "observation": "You are on the brink of a thirty foot pit with a massive orange column down one wall. You could climb down here but you could not get back up. The maze continues at this level."}, {"step": 248, "action": "down", "observation": ""}, {"step": 249, "action": "east", "observation": ""}, {"step": 250, "action": "east", "observation": "\nA three foot black rod with a rusty star on one end lies nearby."}, {"step": 251, "action": "get rod", "observation": ""}, {"step": 252, "action": "xyzzy", "observation": "You are inside a building, a well house for a large spring.\nA solid golden chain lies in coils on the ground!\nThe Persian rug is spread out on the floor here.\n\nYou can also see some precious jewelry, many rare coins, some diamonds, a nest of golden eggs, a glistening pearl, a selection of rare spices, a jeweled trident, a platinum pyramid, an emerald the size of a plover's egg, a ming vase, a velvet pillow, a wicker cage (which is closed) (in which is a little bird), a large gold nugget and some bars of silver here."}, {"step": 253, "action": "drop all", "observation": "treasure chest: Safely deposited.\nsmall bottle: Dropped.\nbrass lantern: Dropped.\n\n[Your score has just gone up by seven points.]"}, {"step": 254, "action": "get lamp", "observation": ""}, {"step": 255, "action": "plugh", "observation": "You are in a large room, with a passage to the south, a passage to the west, and a wall of broken rock to the east. There is a large \"Y2\" on a rock in the room's center."}, {"step": 256, "action": "wait", "observation": ""}, {"step": 257, "action": "wait", "observation": ""}, {"step": 258, "action": "wait", "observation": ""}, {"step": 259, "action": "wait", "observation": ""}, {"step": 260, "action": "wait", "observation": ""}, {"step": 261, "action": "wait", "observation": ""}, {"step": 262, "action": "wait", "observation": ""}, {"step": 263, "action": "wait", "observation": ""}, {"step": 264, "action": "wait", "observation": ""}, {"step": 265, "action": "wait", "observation": ""}, {"step": 266, "action": "wait", "observation": ""}, {"step": 267, "action": "wait", "observation": ""}, {"step": 268, "action": "wait", "observation": ""}, {"step": 269, "action": "wait", "observation": ""}, {"step": 270, "action": "wait", "observation": ""}, {"step": 271, "action": "wait", "observation": "\nThe sepulchral voice intones, \"The cave is now closed.\" As the echoes fade, there is a blinding flash of light (and a small puff of orange smoke). . . \n\nAs your eyes refocus, you look around...\n\nNE End of Repository\nYou are at the northeast end of an immense room, even larger than the giant room. It appears to be a repository for the \"Adventure\" program. Massive torches far overhead bathe the room with smoky yellow light. Scattered about you can be seen a pile of bottles (all of them empty), a nursery of young beanstalks murmuring quietly, a bed of oysters, a bundle of black rods with rusty stars on their ends, and a collection of brass lanterns. Off to one side a great many dwarves are sleeping on the floor, snoring loudly. A sign nearby reads: \"Do not disturb the dwarves!\"\n\nAn immense mirror is hanging against one wall, and stretches to the other end of the room, where various other sundry objects can be glimpsed dimly in the distance.\n\nYour lamp is here, gleaming brightly.\nThere is an enormous oyster here with its shell tightly closed.\n\nYou can also see a black rod with a rusty star on the end and a small bottle (which is empty) here.\n\n[Your score has just gone up by ten points.]"}, {"step": 272, "action": "southwest", "observation": "You are at the southwest end of the repository. To one side is a pit full of fierce green snakes. On the other side is a row of small wicker cages, each of which contains a little sulking bird. In one corner is a bundle of black rods with rusty marks on their ends. A large number of velvet pillows are scattered about on the floor. A vast mirror stretches off to the northeast. At your feet is a large steel grate, next to which is a sign which reads, \"TREASURE VAULT. Keys in main office.\"\n\nAn immense mirror is hanging against one wall, and stretches to the other end of the room, where various other sundry objects can be glimpsed dimly in the distance.\n\nA cheerful little bird is sitting here singing.\n\nThe grate is closed.\n\nA three foot black rod with a rusty mark on one end lies nearby.\n\nYou can also see a velvet pillow here."}, {"step": 273, "action": "get all", "observation": "velvet pillow: Taken.\nlittle bird: You can catch the bird, but you cannot carry it.\nsteel grate: That's fixed in place.\nblack rod with a rusty mark on the end: Taken.\ncollection of adventure game materials: Realizing that by removing the loot here you'd be ruining the game for future players, you leave the \"Adventure\" materials where they are."}, {"step": 274, "action": "northeast", "observation": "\nAn immense mirror is hanging against one wall, and stretches to the other end of the room, where various other sundry objects can be glimpsed dimly in the distance.\n\nYour lamp is here, gleaming brightly.\nThere is an enormous oyster here with its shell tightly closed.\n\nYou can also see a black rod with a rusty star on the end and a small bottle (which is empty) here."}, {"step": 275, "action": "drop all", "observation": "velvet pillow: Dropped."}, {"step": 276, "action": "southwest", "observation": "\nAn immense mirror is hanging against one wall, and stretches to the other end of the room, where various other sundry objects can be glimpsed dimly in the distance.\n\nA cheerful little bird is sitting here singing.\n\nThe grate is closed."}, {"step": 277, "action": "blast", "observation": "\n\n    *** You have won ***\n\n\nIn that game you scored 350 out of a possible 350, in 277 turns, earning you the rank of Grandmaster Adventurer!\n\nWould you like to RESTART, RESTORE a saved game, see some suggestions for AMUSING things to do or QUIT"}]};
-    
-    let currentStep = 1;
-    let maxStep = 1;
-    let isPlaying = false;
-    let playInterval = null;
-    let graph = null;
-    
-    // Add display properties to edges for persistent styling
-    graphData.links = graphData.links.map(link => ({
-      ...link,
-      __sourceId: link.source,
-      __targetId: link.target,
-      displayColor: link.color || '#000080',
-      displayWidth: link.width || 1
-    }));
-    
-    // Calculate max step
-    graphData.nodes.forEach(node => {
-      maxStep = Math.max(maxStep, node.step || 1);
-    });
-    graphData.links.forEach(link => {
-      maxStep = Math.max(maxStep, link.step || 1);
-    });
-    
-    // Update slider max value
-    document.getElementById('stepSlider').max = maxStep;
-    
-    // Create 3D graph
-    graph = ForceGraph3D()(document.getElementById('graph'))
-      .backgroundColor('#ffffff')
-      .nodeLabel('id')
-      .linkLabel(link => `${link.action}${link.displayColor === 'red' ? ' [conflict]' : ''}`)
-      .linkColor(link => link.displayColor)
-      .linkWidth(link => link.displayWidth)
-      .nodeColor(node => {
-        // Detect overlapping nodes
-        const posMap = {};
-        const visibleNodes = getVisibleNodes();
-        visibleNodes.forEach(n => {
-          const key = n.x + ',' + n.y + ',' + n.z;
-          if (!posMap[key]) posMap[key] = [];
-          posMap[key].push(n);
-        });
-        const nodeKey = node.x + ',' + node.y + ',' + node.z;
-        const overlap = posMap[nodeKey] && posMap[nodeKey].length > 1;
-        
-        // Check if node is new in current step
-        const isNew = node.step === currentStep;
-        if (isNew) return '#4CAF50'; // Green for new nodes
-        return overlap ? '#800080' : '#000080';
-      })
-      .nodeThreeObject(node => {
-        const group = new THREE.Group();
-        
-        // Detect overlap
-        const posMap = {};
-        const visibleNodes = getVisibleNodes();
-        visibleNodes.forEach(n => {
-          const key = n.x + ',' + n.y + ',' + n.z;
-          if (!posMap[key]) posMap[key] = [];
-          posMap[key].push(n);
-        });
-        const nodeKey = node.x + ',' + node.y + ',' + node.z;
-        const overlap = posMap[nodeKey] && posMap[nodeKey].length > 1;
-        const isNew = node.step === currentStep;
-        
-        // Sphere
-        const sphereGeometry = new THREE.SphereGeometry(5);
-        const sphereMaterial = new THREE.MeshLambertMaterial({
-          color: isNew ? '#4CAF50' : (overlap ? '#800080' : '#000080')
-        });
-        const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-        group.add(sphere);
-        
-        // Text label
-        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
-          map: new THREE.CanvasTexture((() => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            ctx.font = '32px Arial';
-            const textMetrics = ctx.measureText(node.id);
-            const textWidth = textMetrics.width;
-            
-            canvas.width = Math.max(512, textWidth + 80);
-            canvas.height = 96;
-            
-            ctx.font = '32px Arial';
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(node.id, canvas.width / 2, canvas.height / 2);
-            
-            return canvas;
-          })()),
-          transparent: true,
-          opacity: 0.8
-        }));
-        const canvasWidth = Math.max(512, node.id.length * 30 + 80);
-        sprite.scale.set(canvasWidth / 10, 9.6, 1);
-        sprite.position.y = 15;
-        group.add(sprite);
-        
-        return group;
-      })
-      .linkCurvature(0.25)
-      .linkDirectionalArrowLength(4)
-      .linkDirectionalArrowRelPos(1);
-    
-    // Initialize first step
-    updateGraphForStep(1);
-    
-    function getVisibleNodes() {
-      return graphData.nodes.filter(node => (node.step || 1) <= currentStep);
-    }
-    
-    function getVisibleLinks() {
-      const visibleNodeIds = new Set(getVisibleNodes().map(n => n.id));
-      return graphData.links.filter(link => 
-        (link.step || 1) <= currentStep &&
-        visibleNodeIds.has(link.__sourceId || link.source) &&
-        visibleNodeIds.has(link.__targetId || link.target)
-      );
-    }
-    
-    function updateGraphForStep(step) {
-      currentStep = step;
-      
-      // Update slider value
-      document.getElementById('stepSlider').value = currentStep;
-      
-      // Get visible nodes and edges
-      const visibleNodes = getVisibleNodes();
-      const visibleLinks = getVisibleLinks();
-      
-      // Update edge styling based on whether they're new
-      visibleLinks.forEach(link => {
-        const isNew = link.step === currentStep;
-        if (isNew) {
-          link.displayColor = link.color === 'red' ? '#ff6b6b' : '#4CAF50';
-          link.displayWidth = 3;
-        } else {
-          link.displayColor = link.color || '#000080';
-          link.displayWidth = link.width || 1;
-        }
-      });
-      
-      // Update graph data
-      graph.graphData({
-        nodes: visibleNodes,
-        links: visibleLinks
-      });
-      
-      // Update info panel
-      updateInfoPanel();
-      
-      // Update button states
-      document.getElementById('prevButton').disabled = currentStep <= 1;
-      document.getElementById('nextButton').disabled = currentStep >= maxStep;
-    }
-    
-    function updateInfoPanel() {
-      // Get visible nodes and edges count
-      const visibleNodes = getVisibleNodes();
-      const visibleLinks = getVisibleLinks();
-      
-      // Update step display with counts
-      document.getElementById('stepDisplay').textContent = `Step: ${currentStep} (Nodes: ${visibleNodes.length}, Edges: ${visibleLinks.length})`;
-      
-      // Get new nodes for current step
-      const newNodes = graphData.nodes.filter(node => node.step === currentStep);
-      const newNodesHtml = newNodes.map(node => 
-        `<div class="new-item new-node">${node.id}</div>`
-      ).join('');
-      document.getElementById('newNodesList').innerHTML = newNodesHtml || '<div>None</div>';
-      
-      // Get new edges for current step
-      const newLinks = graphData.links.filter(link => link.step === currentStep);
-      const newLinksHtml = newLinks.map(link => {
-        const isConflict = link.color === 'red';
-        const className = isConflict ? 'conflict-edge' : 'new-edge';
-        const conflictText = isConflict ? ' [conflict]' : '';
-        return `<div class="new-item ${className}">${link.__sourceId || link.source} → ${link.__targetId || link.target} (${link.action})${conflictText}</div>`;
-      }).join('');
-      document.getElementById('newEdgesList').innerHTML = newLinksHtml || '<div>None</div>';
-      
-      // Update walkthrough info
-      if (graphData.walkthrough) {
-        const walkthroughStep = graphData.walkthrough.find(w => w.step === currentStep);
-        if (walkthroughStep) {
-          document.getElementById('walkthroughAction').textContent = `Action: ${walkthroughStep.action || 'None'}`;
-          document.getElementById('walkthroughObservation').textContent = walkthroughStep.observation || '';
-        } else {
-          document.getElementById('walkthroughAction').textContent = 'Action: None';
-          document.getElementById('walkthroughObservation').textContent = 'No walkthrough data for this step';
-        }
-      }
-    }
-    
-    function nextStep() {
-      if (currentStep < maxStep) {
-        updateGraphForStep(currentStep + 1);
-      }
-    }
-    
-    function previousStep() {
-      if (currentStep > 1) {
-        updateGraphForStep(currentStep - 1);
-      }
-    }
-    
-    function setStep(step) {
-      updateGraphForStep(parseInt(step));
-    }
-    
-    function togglePlay() {
-      isPlaying = !isPlaying;
-      const playButton = document.getElementById('playButton');
-      
-      if (isPlaying) {
-        playButton.textContent = 'Pause';
-        playInterval = setInterval(() => {
-          if (currentStep < maxStep) {
-            nextStep();
-          } else {
-            // Reached last step, stop playing
-            togglePlay();
-          }
-        }, 1000); // Play one step per second
-      } else {
-        playButton.textContent = 'Play';
-        if (playInterval) {
-          clearInterval(playInterval);
-          playInterval = null;
-        }
-      }
-    }
-    
-    // Keyboard shortcuts
-    document.addEventListener('keydown', (event) => {
-      switch(event.key) {
-        case 'ArrowLeft':
-          previousStep();
-          break;
-        case 'ArrowRight':
-          nextStep();
-          break;
-        case ' ':
-          event.preventDefault();
-          togglePlay();
-          break;
-      }
-    });
-  </script>
+</nav>
+
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-2 publication-title">MapRepair: Constructing Coherent Spatial Memory in LLM Agents through Graph Rectification</h1>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">Puzhen Zhang,</span>
+            <span class="author-block">Xuyang Chen,</span>
+            <span class="author-block">Yu Feng,</span>
+            <span class="author-block">Yuhan Jiang,</span>
+            <span class="author-block">Liqiu Meng</span>
+          </div>
+
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">Chair of Cartography and Visual Analytics, Technical University of Munich</span>
+          </div>
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <span class="link-block">
+                <a href="https://github.com/nitpicker55555/text_maze.github.io/raw/main/static/paper/maprepair.pdf"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="fas fa-file-pdf"></i></span>
+                  <span>Paper</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="https://github.com/nitpicker55555/text_maze.github.io"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="fab fa-github"></i></span>
+                  <span>Code</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="https://github.com/nitpicker55555/text_maze.github.io"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="far fa-images"></i></span>
+                  <span>Refined MANGO</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="./3d-graph-visualization.html"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="fas fa-cube"></i></span>
+                  <span>3D Demo</span>
+                </a>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <img src="./static/images/framework.png" alt="MapRepair framework overview">
+      <h2 class="subtitle has-text-centered" style="margin-top:1rem;">
+        <b>MapRepair</b> detects, localizes, and repairs structural inconsistencies in LLM-generated navigation graphs through
+        conflict detection, LCA-based localization, and Edge Impact Score prioritization, backed by a versioned reasoning history.
+      </h2>
+    </div>
+  </div>
+</section>
+
+
+<section class="section" id="abstract">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+            When LLM agents build navigation graphs incrementally from textual observations, small errors made early
+            can silently propagate, manifesting as structural conflicts only when sufficient context has accumulated.
+            This <b>temporal gap between error introduction and detection</b> is exacerbated by coupled dependencies,
+            where one bad edge triggers cascading mistakes.
+          </p>
+          <p>
+            We present <b>MapRepair</b>, a history-aware framework for detecting and repairing topological inconsistencies
+            in LLM-generated navigation graphs. At its core are three components:
+            (i) explicit <b>conflict detection</b> over three domain-invariant constraints (topological, directional, naming);
+            (ii) a <b>Version Control</b> module that records every modification together with its originating observation,
+            enabling time-aware tracing and rollback; and
+            (iii) an <b>Edge Impact Score (EIS)</b> that prioritizes repair candidates by estimating the downstream effect of each edge.
+          </p>
+          <p>
+            On the refined MANGO benchmark, MapRepair resolves <b>68.9%</b> of conflicts with <b>54.9%</b> accuracy, versus
+            <b>21.9% / 5.8%</b> for the direct baseline. On Chapters 16 and 17 of <i>Dream of the Red Chamber</i>, MapRepair
+            reaches <b>94.3% node recall</b> (+8.6 pts) and <b>88.2% edge recall</b> (+55.8 pts) compared to direct incremental mapping.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+
+<section class="section" id="framework">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">The Delayed-Manifestation Problem</h2>
+    <div class="columns is-centered">
+      <div class="column is-four-fifths">
+        <div class="content has-text-justified">
+          <p>
+            Most LLM-generated graph errors do not surface immediately. A wrongly labeled direction at step 5 may
+            produce no visible conflict until a later exploration step places two nodes at the same coordinate.
+            MapRepair is designed around this <b>delayed manifestation</b> pattern: conflict detection fires whenever the
+            structural invariants are violated, and a history-aware repair stage then traces back to the true error.
+          </p>
+        </div>
+        <figure class="image">
+          <img src="./static/images/temporal.png" alt="Temporal gap between error introduction and conflict detection">
+        </figure>
+      </div>
+    </div>
+
+    <br>
+
+    <h2 class="title is-3 has-text-centered">Three Structural Invariants</h2>
+    <div class="columns is-centered">
+      <div class="column is-full">
+        <figure class="image">
+          <img src="./static/images/conflict_types.png" alt="Three types of conflicts: topological, directional, naming">
+        </figure>
+        <div class="columns is-centered" style="margin-top:1rem;">
+          <div class="column">
+            <div class="feature-card">
+              <div class="feature-icon"><i class="fas fa-th"></i></div>
+              <h4 class="title is-5">Topological</h4>
+              <p>Two distinct rooms cannot occupy the same physical position (physical exclusivity).</p>
+            </div>
+          </div>
+          <div class="column">
+            <div class="feature-card">
+              <div class="feature-icon"><i class="fas fa-compass"></i></div>
+              <h4 class="title is-5">Directional</h4>
+              <p>A single doorway cannot lead in two directions simultaneously (directional uniqueness).</p>
+            </div>
+          </div>
+          <div class="column">
+            <div class="feature-card">
+              <div class="feature-icon"><i class="fas fa-tag"></i></div>
+              <h4 class="title is-5">Naming</h4>
+              <p>Each location has a unique identity that should not be reused for different places.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <br>
+
+    <h2 class="title is-3 has-text-centered">Framework Pipeline</h2>
+    <div class="columns is-centered">
+      <div class="column is-full">
+        <div class="columns is-centered">
+          <div class="column">
+            <div class="feature-card">
+              <h4 class="title is-5"><i class="fas fa-search has-text-info"></i> &nbsp;Conflict Detection</h4>
+              <p>Checks every incremental edge addition against the three structural invariants. Runs in O(|E|).</p>
+            </div>
+          </div>
+          <div class="column is-narrow"><div class="pipeline-arrow"><i class="fas fa-arrow-right"></i></div></div>
+          <div class="column">
+            <div class="feature-card">
+              <h4 class="title is-5"><i class="fas fa-code-branch has-text-info"></i> &nbsp;LCA Localization</h4>
+              <p>Finds the lowest common ancestor on the <em>reasoning history tree</em>, narrowing the candidate edges to a divergent subpath.</p>
+            </div>
+          </div>
+          <div class="column is-narrow"><div class="pipeline-arrow"><i class="fas fa-arrow-right"></i></div></div>
+          <div class="column">
+            <div class="feature-card">
+              <h4 class="title is-5"><i class="fas fa-sort-amount-down has-text-info"></i> &nbsp;EIS + VC Repair</h4>
+              <p>Ranks candidates by reachability, conflict count, and usage; the LLM queries Version Control for the original observation to decide the fix.</p>
+            </div>
+          </div>
+        </div>
+        <div class="highlight-box">
+          <b>Key modeling decision.</b> LCA is computed over the <b>Reasoning History Tree</b> &mdash; a DAG indexed by
+          construction timestamps &mdash; not the spatial graph itself. This keeps LCA well-defined even when the spatial
+          graph contains cycles.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+
+<section class="section" id="case-study">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Interactive Case Study</h2>
+    <div class="columns is-centered">
+      <div class="column is-four-fifths has-text-centered">
+        <p class="subtitle is-5">
+          A 9-node environment where a directional error at step 5 triggers a topological conflict only at step 20
+          (a 15-step temporal gap). Step through the walkthrough to see error propagation, LCA filtering, and
+          EIS + VC repair in action.
+        </p>
+      </div>
+    </div>
+
+    <div class="case-study-card">
+      <div class="case-study-wrapper">
+        <div>
+          <svg id="case-svg" viewBox="0 0 480 480" xmlns="http://www.w3.org/2000/svg"></svg>
+          <div class="case-controls">
+            <button id="case-reset" class="button is-light is-small">
+              <span class="icon"><i class="fas fa-undo"></i></span><span>Reset</span>
+            </button>
+            <button id="case-next" class="button is-info is-small">
+              <span>Next Step</span><span class="icon"><i class="fas fa-arrow-right"></i></span>
+            </button>
+            <button id="case-end" class="button is-success is-small">
+              <span>Jump to End</span><span class="icon"><i class="fas fa-forward"></i></span>
+            </button>
+          </div>
+          <div class="legend">
+            <span><span class="legend-swatch" style="background:#5b8def;"></span>Added node</span>
+            <span><span class="legend-swatch" style="background:#ffd6c2;"></span>Positionally shifted</span>
+            <span><span class="legend-swatch" style="background:#ffb3b3;"></span>Conflicting</span>
+            <span><span class="legend-swatch" style="background:#b7ecd8;"></span>Repaired</span>
+            <span><span class="legend-swatch" style="background:#e06c4f;"></span>Error edge</span>
+            <span><span class="legend-swatch" style="background:#d62828;"></span>Conflict trigger</span>
+          </div>
+        </div>
+        <div class="case-side">
+          <div class="case-info-box" id="case-step-info"></div>
+          <div class="case-eis-box" id="case-eis-table"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+
+<section class="section" id="results">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Results</h2>
+
+    <div class="columns is-centered">
+      <div class="column is-3">
+        <div class="metric-card">
+          <div class="metric-number">68.9%</div>
+          <div class="metric-label">Repair Rate (MANGO)</div>
+          <div class="metric-delta">+47.1 pts over baseline</div>
+        </div>
+      </div>
+      <div class="column is-3">
+        <div class="metric-card">
+          <div class="metric-number">54.9%</div>
+          <div class="metric-label">Repair Accuracy</div>
+          <div class="metric-delta">+49.1 pts over baseline</div>
+        </div>
+      </div>
+      <div class="column is-3">
+        <div class="metric-card">
+          <div class="metric-number">94.3%</div>
+          <div class="metric-label">Node Recall (Honglou)</div>
+          <div class="metric-delta">+8.6 pts</div>
+        </div>
+      </div>
+      <div class="column is-3">
+        <div class="metric-card">
+          <div class="metric-number">88.2%</div>
+          <div class="metric-label">Edge Recall (Honglou)</div>
+          <div class="metric-delta">+55.8 pts</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="columns">
+      <div class="column is-half">
+        <div class="chart-container"><canvas id="chart-ablation"></canvas></div>
+      </div>
+      <div class="column is-half">
+        <div class="chart-container"><canvas id="chart-models"></canvas></div>
+      </div>
+    </div>
+
+    <div class="columns">
+      <div class="column is-half">
+        <div class="chart-container"><canvas id="chart-recall"></canvas></div>
+      </div>
+      <div class="column is-half">
+        <div class="chart-container"><canvas id="chart-algo"></canvas></div>
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      <b>Algorithmic validation (no LLM).</b> On six synthetic scenarios, LCA-based filtering reduces the candidate
+      edge space by <b>22.7%</b> on average (up to 75% for directional conflicts). Edge scoring achieves perfect
+      rank correlation with true cascade potential (<b>Spearman&nbsp;&rho;&nbsp;=&nbsp;1.0</b>), and priority-based
+      inspection requires <b>56.5% fewer edge examinations</b> than random traversal (a 2.3&times; speedup).
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Refined MANGO Benchmark</h2>
+    <div class="columns is-centered">
+      <div class="column is-four-fifths">
+        <div class="content has-text-justified">
+          <p>
+            The original MANGO benchmark contains pre-existing structural conflicts in its ground truth (e.g., the
+            <code>zork2</code> carousel room has two outgoing "north" edges), making it impossible to define a reliable
+            repair metric. We release a <b>programmatically corrected</b> version following a deterministic 5-step
+            pipeline (action filtering, directional / topological / reverse conflict resolution, self-loop removal)
+            with no manual intervention.
+          </p>
+        </div>
+        <div class="columns">
+          <div class="column">
+            <div class="metric-card">
+              <div class="metric-number" style="color:#5b8def;">53</div>
+              <div class="metric-label">Interactive fiction games</div>
+            </div>
+          </div>
+          <div class="column">
+            <div class="metric-card">
+              <div class="metric-number" style="color:#5b8def;">930</div>
+              <div class="metric-label">Total locations</div>
+            </div>
+          </div>
+          <div class="column">
+            <div class="metric-card">
+              <div class="metric-number" style="color:#5b8def;">1,511</div>
+              <div class="metric-label">Clean edges</div>
+            </div>
+          </div>
+          <div class="column">
+            <div class="metric-card">
+              <div class="metric-number" style="color:#5b8def;">13,096</div>
+              <div class="metric-label">Walkthrough steps</div>
+            </div>
+          </div>
+        </div>
+        <p class="has-text-centered has-text-grey" style="margin-top:0.5rem;">
+          17.5 nodes and 28.5 edges per game on average; 71.5% of edges are bidirectional; 14 distinct movement actions.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <h2 class="title">BibTeX</h2>
+    <div class="bibtex-box">
+<pre>@inproceedings{zhang2026maprepair,
+  title     = {Constructing Coherent Spatial Memory in LLM Agents through Graph Rectification},
+  author    = {Zhang, Puzhen and Chen, Xuyang and Feng, Yu and Jiang, Yuhan and Meng, Liqiu},
+  booktitle = {Under review},
+  year      = {2026},
+  institution = {Technical University of Munich}
+}</pre>
+    </div>
+  </div>
+</section>
+
+
+<footer class="footer">
+  <div class="container">
+    <div class="content has-text-centered">
+      <p>
+        This website borrows the template from the excellent
+        <a href="https://github.com/nerfies/nerfies.github.io">Nerfies project page</a>.
+        Source code is available on
+        <a href="https://github.com/nitpicker55555/text_maze.github.io">GitHub</a>.
+      </p>
+    </div>
+  </div>
+</footer>
+
+<script src="./static/js/case_study.js"></script>
+<script src="./static/js/results_charts.js"></script>
 </body>
 </html>
