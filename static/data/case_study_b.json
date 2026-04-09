@@ -93,6 +93,7 @@
     {
       "attempt": 1,
       "edge": "Entrance Hall → Office",
+      "highlight": { "src": "Entrance Hall", "dst": "Office" },
       "recall_step": 3,
       "vc_observation": "You walk east from the entrance hall into a spacious office with large windows.",
       "analysis": "Clear directional cue \"walk east\" matches the labeled direction.",
@@ -102,11 +103,13 @@
     {
       "attempt": 2,
       "edge": "Office → Meeting Room",
+      "highlight": { "src": "Office", "dst": "Meeting Room" },
       "recall_step": 5,
       "vc_observation": "Leaving the office, you head down the hallway to the meeting room.",
-      "analysis": "Text says \"head down the hallway\"  which was mapped to south, but \"down the hallway\" is spatially ambiguous. Given the office faces east, \"down the hallway\" likely means east.",
+      "analysis": "Text says \"head down the hallway\" which was mapped to south, but \"down the hallway\" is spatially ambiguous. Given the office faces east, \"down the hallway\" likely means east.",
       "verdict": "ERROR",
-      "action": "REPAIR: change direction from south to east"
+      "action": "REPAIR: change direction from south to east",
+      "apply": { "src": "Office", "dst": "Meeting Room", "new_dir": "east" }
     }
   ]
 }
